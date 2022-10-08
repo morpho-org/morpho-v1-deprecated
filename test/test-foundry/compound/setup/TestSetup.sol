@@ -1,20 +1,11 @@
 // SPDX-License-Identifier: GNU AGPLv3
 pragma solidity 0.8.13;
 
-import "@contracts/compound/interfaces/compound/ICompound.sol";
-import "@contracts/compound/interfaces/IRewardsManager.sol";
+import "@contracts/compound/interfaces/IMorpho.sol";
 
-import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-
-import "@contracts/compound/IncentivesVault.sol";
-import "@contracts/compound/RewardsManager.sol";
-import "@contracts/compound/PositionsManager.sol";
-import "@contracts/compound/MatchingEngine.sol";
-import "@contracts/compound/InterestRatesManager.sol";
-import "@contracts/compound/Morpho.sol";
-import "@contracts/compound/lens/Lens.sol";
+import "@contracts/compound/libraries/CompoundMath.sol";
+import "@rari-capital/solmate/src/utils/SafeTransferLib.sol";
 
 import "../../common/helpers/MorphoToken.sol";
 import "../../common/helpers/Chains.sol";
@@ -23,8 +14,8 @@ import "../helpers/DumbOracle.sol";
 import {User} from "../helpers/User.sol";
 import {Utils} from "./Utils.sol";
 import "@config/Config.sol";
-import "forge-std/console.sol";
-import "forge-std/Vm.sol";
+import "@forge-std/console.sol";
+import "@forge-std/Vm.sol";
 
 contract TestSetup is Config, Utils {
     Vm public hevm = Vm(HEVM_ADDRESS);
@@ -32,26 +23,8 @@ contract TestSetup is Config, Utils {
     uint256 public constant MAX_BASIS_POINTS = 10_000;
     uint256 public constant INITIAL_BALANCE = 1_000_000;
 
-    ProxyAdmin public proxyAdmin;
-    TransparentUpgradeableProxy public lensProxy;
-    TransparentUpgradeableProxy public morphoProxy;
-    TransparentUpgradeableProxy public rewardsManagerProxy;
-
-    Lens public lensImplV1;
-    Morpho public morphoImplV1;
-    IRewardsManager public rewardsManagerImplV1;
-
-    Lens public lens;
-    Morpho public morpho;
-    IPositionsManager public positionsManager;
-    InterestRatesManager public interestRatesManager;
-    IncentivesVault public incentivesVault;
-    IRewardsManager public rewardsManager;
-
     DumbOracle public dumbOracle;
     MorphoToken public morphoToken;
-    IComptroller public comptroller;
-    ICompoundOracle public oracle;
 
     User public treasuryVault;
 
@@ -78,14 +51,6 @@ contract TestSetup is Config, Utils {
     function onSetUp() public virtual {}
 
     function initContracts() internal {
-        Types.MaxGasForMatching memory defaultMaxGasForMatching = Types.MaxGasForMatching({
-            supply: 3e6,
-            borrow: 3e6,
-            withdraw: 3e6,
-            repay: 3e6
-        });
-
-        comptroller = IComptroller(comptrollerAddress);
         interestRatesManager = new InterestRatesManager();
         positionsManager = new PositionsManager();
 
@@ -102,7 +67,7 @@ contract TestSetup is Config, Utils {
             positionsManager,
             interestRatesManager,
             comptroller,
-            defaultMaxGasForMatching,
+            Types.MaxGasForMatching({supply: 3e6, borrow: 3e6, withdraw: 3e6, repay: 3e6}),
             1,
             20,
             cEth,
@@ -111,14 +76,13 @@ contract TestSetup is Config, Utils {
 
         treasuryVault = new User(morpho);
 
-        oracle = ICompoundOracle(comptroller.oracle());
         morpho.setTreasuryVault(address(treasuryVault));
 
         /// Create markets ///
 
         createMarket(cDai);
         createMarket(cUsdc);
-        createMarket(cWbtc);
+        createMarket(cWbtc2);
         createMarket(cUsdt);
         createMarket(cBat);
         createMarket(cEth);
@@ -130,10 +94,10 @@ contract TestSetup is Config, Utils {
         morphoToken = new MorphoToken(address(this));
         dumbOracle = new DumbOracle();
         incentivesVault = new IncentivesVault(
-            IComptroller(comptrollerAddress),
+            comptroller,
             IMorpho(address(morpho)),
             morphoToken,
-            address(1),
+            address(treasuryVault),
             dumbOracle
         );
         morphoToken.transfer(address(incentivesVault), 1_000_000 ether);
@@ -271,21 +235,19 @@ contract TestSetup is Config, Utils {
     }
 
     /// @notice Computes and returns peer-to-peer rates for a specific market (without taking into account deltas !).
-    /// @param _poolTokenAddress The market address.
+    /// @param _poolToken The market address.
     /// @return p2pSupplyRate_ The market's supply rate in peer-to-peer (in wad).
     /// @return p2pBorrowRate_ The market's borrow rate in peer-to-peer (in wad).
-    function getApproxP2PRates(address _poolTokenAddress)
+    function getApproxP2PRates(address _poolToken)
         public
         view
         returns (uint256 p2pSupplyRate_, uint256 p2pBorrowRate_)
     {
-        ICToken cToken = ICToken(_poolTokenAddress);
+        ICToken cToken = ICToken(_poolToken);
 
         uint256 poolSupplyBPY = cToken.supplyRatePerBlock();
         uint256 poolBorrowBPY = cToken.borrowRatePerBlock();
-        (uint256 reserveFactor, uint256 p2pIndexCursor) = morpho.marketParameters(
-            _poolTokenAddress
-        );
+        (uint256 reserveFactor, uint256 p2pIndexCursor) = morpho.marketParameters(_poolToken);
 
         // rate = 2/3 * poolSupplyRate + 1/3 * poolBorrowRate.
         uint256 rate = ((10_000 - p2pIndexCursor) *

@@ -1,32 +1,108 @@
 -include .env.local
+.EXPORT_ALL_VARIABLES:
 
-export FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
-export FOUNDRY_FORK_BLOCK_NUMBER=14292587
-export DAPP_REMAPPINGS=@config/=config/$(NETWORK)
+SMODE?=network
+PROTOCOL?=compound
+NETWORK?=eth-mainnet
 
-test-compound: node_modules
-	@echo Run all tests on ${NETWORK}
-	@forge test -vv -c test/test-foundry/compound --no-match-contract TestGasConsumption --no-match-test testFuzz
+FOUNDRY_SRC=contracts/${PROTOCOL}/
+FOUNDRY_TEST=test/test-foundry/${PROTOCOL}/
+FOUNDRY_REMAPPINGS=@config/=config/${NETWORK}/${PROTOCOL}/
 
-fuzz-compound: node_modules
-	@echo Run all fuzzing tests on ${NETWORK}
-	@forge test -vv -c test/test-foundry/compound --match-test testFuzz
+FOUNDRY_PRIVATE_KEY?=${DEPLOYER_PRIVATE_KEY}
+FOUNDRY_ETH_RPC_URL=https://${NETWORK}.g.alchemy.com/v2/${ALCHEMY_KEY}
 
-common:
-	@echo Run all common tests
-	@forge test -vvv -c test/test-foundry/common
+ifeq (${NETWORK}, eth-mainnet)
+	OUNDRY_CHAIN_ID=1
+	FOUNDRY_FORK_BLOCK_NUMBER?=14292587
+endif
 
-contract-% c-%: node_modules
-	@echo Run tests for contract $* on ${NETWORK}
-	@forge test -vvv -c test/test-foundry/compound --match-contract $*
+ifeq (${NETWORK}, eth-ropsten)
+	FOUNDRY_CHAIN_ID=3
+endif
 
-single-% s-%: node_modules
-	@echo Run single test $* on ${NETWORK}
-	@forge test -vvvvv -c test/test-foundry/compound --match-test $* > trace.ansi
+ifeq (${NETWORK}, eth-goerli)
+	FOUNDRY_CHAIN_ID=5
+endif
 
-.PHONY: config
-config:
-	forge config
+ifeq (${NETWORK}, polygon-mainnet)
+	FOUNDRY_CHAIN_ID=137
+	FOUNDRY_FORK_BLOCK_NUMBER?=22116728
+endif
 
-node_modules:
+ifeq (${SMODE}, local)
+	FOUNDRY_ETH_RPC_URL=http://localhost:8545
+endif
+
+
+install:
 	@yarn
+	@foundryup
+	@git submodule update --init --recursive
+
+	@chmod +x ./scripts/**/*.sh
+
+deploy:
+	@echo Deploying Morpho-${PROTOCOL} on ${NETWORK}
+	./scripts/${PROTOCOL}/deploy.sh
+
+initialize:
+	@echo Initializing Morpho-${PROTOCOL} on ${NETWORK}
+	./scripts/${PROTOCOL}/initialize.sh
+
+create-market:
+	@echo Creating market on Morpho-${PROTOCOL} on ${NETWORK}
+	./scripts/${PROTOCOL}/create-market.sh
+
+anvil:
+	@echo Starting fork of ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
+	@anvil --fork-url ${FOUNDRY_ETH_RPC_URL} --fork-block-number ${FOUNDRY_FORK_BLOCK_NUMBER}
+
+script-%:
+	@echo Running script $* of ${PROTOCOL} on ${NETWORK} with script mode: ${SMODE}
+	@forge script scripts/${PROTOCOL}/$*.s.sol:$* --broadcast -vvvv
+
+test:
+	@echo Running all ${PROTOCOL} tests on ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
+	@forge test -vv | tee trace.ansi
+
+coverage:
+	@echo Create coverage report for ${PROTOCOL} tests on ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
+	@forge coverage
+
+coverage-lcov:
+	@echo Create coverage lcov for ${PROTOCOL} tests on ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
+	@forge coverage --report lcov
+
+fuzz:
+	$(eval FOUNDRY_TEST=test-foundry/fuzzing/${PROTOCOL}/)
+	@echo Running all ${PROTOCOL} fuzzing tests on ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
+	@forge test -vv
+
+gas-report:
+	@echo Creating gas report for ${PROTOCOL} on ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
+	@forge test --gas-report
+
+test-common:
+	@echo Running all common tests on ${NETWORK}
+	@FOUNDRY_TEST=test-foundry/common forge test -vvv
+
+contract-% c-%:
+	@echo Running tests for contract $* of ${PROTOCOL} on ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
+	@forge test -vvv --match-contract $* | tee trace.ansi
+
+single-% s-%:
+	@echo Running single test $* of ${PROTOCOL} on ${NETWORK} at block ${FOUNDRY_FORK_BLOCK_NUMBER}
+	@forge test -vvv --match-test $* | tee trace.ansi
+
+storage-layout-generate:
+	@./scripts/storage-layout.sh generate snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
+
+storage-layout-check: 
+	@./scripts/storage-layout.sh check snapshots/.storage-layout-${PROTOCOL} Morpho RewardsManager Lens
+
+config:
+	@forge config
+
+
+.PHONY: test config test-common foundry

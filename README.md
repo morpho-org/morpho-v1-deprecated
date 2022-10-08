@@ -38,17 +38,32 @@ The protocol's storage, located at Morpho's main proxy contract, is defined in t
 A bug bounty is open on Immunefi. The rewards and scope are defined [here](https://immunefi.com/bounty/morpho/).
 You can also send an email to [security@morpho.xyz](mailto:security@morpho.xyz) if you find something worrying.
 
-## Deployment Addresses on Mainnet
+## Morpho-Compound on Ethereum
 
 - Morpho Proxy: [0x8888882f8f843896699869179fb6e4f7e3b58888](https://etherscan.io/address/0x8888882f8f843896699869179fb6e4f7e3b58888)
-- Morpho Implementation: [0xf29cc0319679b54bd25a8666fc0830b023c6a272](https://etherscan.io/address/0xf29cc0319679b54bd25a8666fc0830b023c6a272)
-- PositionsManager: [0x782107cc83b3b1c4f99efecbb2e0b01f2e8ab45d](https://etherscan.io/address/0x782107cc83b3b1c4f99efecbb2e0b01f2e8ab45d)
-- Lens: [0xe8cfa2edbdc110689120724c4828232e473be1b2](https://etherscan.io/address/0xe8cfa2edbdc110689120724c4828232e473be1b2)
-- InterestRatesManager: [0x2f2d51f4d68a96859d4f69672cbeefd854bd8289](https://etherscan.io/address/0x2f2d51f4d68a96859d4f69672cbeefd854bd8289)
-- ProxyAdmin: [0x99917ca0426fbc677e84f873fb0b726bb4799cd8](https://etherscan.io/address/0x99917ca0426fbc677e84f873fb0b726bb4799cd8)
+- Morpho Implementation: [0xd5ae0dabb7fc3bdb7d11d6aa13e7b5e01db4866a](https://etherscan.io/address/0xd5ae0dabb7fc3bdb7d11d6aa13e7b5e01db4866a)
+- PositionsManager: [0x082bf6702e718483c85423bd279088c215a21302](https://etherscan.io/address/0x082bf6702e718483c85423bd279088c215a21302)
+- InterestRatesManager: [0xe3556899a0f9faffc20cfbc6f926e2a377a1e5f3](https://etherscan.io/address/0xe3556899a0f9faffc20cfbc6f926e2a377a1e5f3)
 - RewardsManager Proxy: [0x78681e63b6f3ad81ecd64aecc404d765b529c80d](https://etherscan.io/address/0x78681e63b6f3ad81ecd64aecc404d765b529c80d)
 - RewardsManager Implementation: [0x70c59877f5358d8d6f2fc90f53813eb2b2698ab7](https://etherscan.io/address/0x70c59877f5358d8d6f2fc90f53813eb2b2698ab7)
+- Lens Proxy: [0x930f1b46e1d081ec1524efd95752be3ece51ef67](https://etherscan.io/address/0x930f1b46e1d081ec1524efd95752be3ece51ef67)
+- Lens: [0xe8cfa2edbdc110689120724c4828232e473be1b2](https://etherscan.io/address/0xe8cfa2edbdc110689120724c4828232e473be1b2)
 - CompRewardsLens: [0x9e977f745d5ae26c6d47ac5417ee112312873ba7](https://etherscan.io/address/0x9e977f745d5ae26c6d47ac5417ee112312873ba7)
+
+## Morpho-Aave on Ethereum
+
+- Morpho Proxy: [0x777777c9898d384f785ee44acfe945efdff5f3e0](https://etherscan.io/address/0x777777c9898d384f785ee44acfe945efdff5f3e0)
+- Morpho Implementation: [0x299ff2534c6f11624d6a65463b8b40c958ab668f](https://etherscan.io/address/0x299ff2534c6f11624d6a65463b8b40c958ab668f)
+- EntryPositionsManager: [0xdf93cf1ca3acf96bc26783e6fab89400d362d0b4](https://etherscan.io/address/0xdf93cf1ca3acf96bc26783e6fab89400d362d0b4)
+- ExitPositionsManager: [0xf6998f72b92b81c8f683d30ed8678d348fe9754b](https://etherscan.io/address/0xf6998f72b92b81c8f683d30ed8678d348fe9754b)
+- InterestRatesManager: [0x400af815ef4de9e564fbf37268351a50134e6e36](https://etherscan.io/address/0x400af815ef4de9e564fbf37268351a50134e6e36)
+- Lens Proxy: [0x507fa343d0a90786d86c7cd885f5c49263a91ff4](https://etherscan.io/address/0x507fa343d0a90786d86c7cd885f5c49263a91ff4)
+- Lens: [0x8706256509684e9cd93b7f19254775ce9324c226](https://etherscan.io/address/0x8706256509684e9cd93b7f19254775ce9324c226)
+
+
+## Common contracts on Ethereum
+
+- ProxyAdmin: [0x99917ca0426fbc677e84f873fb0b726bb4799cd8](https://etherscan.io/address/0x99917ca0426fbc677e84f873fb0b726bb4799cd8)
 
 ## Licensing
 
